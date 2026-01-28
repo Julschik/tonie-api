@@ -1,177 +1,370 @@
-"""The base module of the tonie-api."""
+"""Main API client for the Tonie Cloud API."""
+
+from __future__ import annotations
 
 import logging
-import mimetypes
-from enum import Enum
+import os
+import random
+from http import HTTPStatus
 from pathlib import Path
-from string import Template
+from typing import Any
 
 import requests
-from requests.exceptions import HTTPError
+from dotenv import load_dotenv
 
-from tonie_api.models import Chapter, Config, CreativeTonie, FileUploadRequest, Household, User
+from tonie_api.exceptions import (
+    AuthenticationError,
+    NotFoundError,
+    RateLimitError,
+    ServerError,
+    TonieAPIError,
+    ValidationError,
+)
+from tonie_api.models import (
+    Config,
+    CreativeTonie,
+    FileUploadRequest,
+    Household,
+    User,
+)
 from tonie_api.session import TonieCloudSession
 
-log = logging.getLogger(__name__)
-log.addHandler(logging.NullHandler())
+logger = logging.getLogger(__name__)
 
-
-class HttpMethod(Enum):
-    """An enum of the Http Method to use."""
-
-    GET = "GET"
-    POST = "POST"
-    PATCH = "PATCH"
+_MIN_SHUFFLE_CHAPTERS = 2
 
 
 class TonieAPI:
-    """The TonieAPI class."""
+    """Client for the Tonie Cloud API.
 
-    API_URL = "https://api.tonie.cloud/v2"
+    Provides methods to interact with the Tonie Cloud API including
+    authentication, retrieving data, and managing Creative Tonies.
+    """
 
-    def __init__(self, username: str, password: str, timeout: int = 30) -> None:
-        """Initializes the API and creates a session token for tonie cloud session."""
-        self.session = TonieCloudSession()
-        self.session.acquire_token(username=username, password=password, timeout=timeout)
+    def __init__(
+        self,
+        username: str | None = None,
+        password: str | None = None,
+        *,
+        session: TonieCloudSession | None = None,
+    ) -> None:
+        """Initialize the Tonie API client.
 
-        if self.session.token is None:
-            msg = "Failed to acquire session token. Please check your credentials or network connection."
-            raise ValueError(msg)
-    def __request(self, url: str, request_type: HttpMethod, data: dict | None = None) -> dict:
-        headers = {"Authorization": f"Bearer {self.session.token}"}
-        if not data:
-            data = {}
-        resp = self.session.request(request_type.name, f"{self.API_URL}/{url}", headers=headers, json=data)
-        if not resp.ok:
-            log.error("HTTP request failed: %s", resp)
-            return {}
-        return resp.json()
+        Credentials can be provided directly or loaded from environment
+        variables (USERNAME, PASSWORD) via a .env file.
 
-    def _get(self, url: str) -> dict:
-        return self.__request(url, HttpMethod.GET)
+        Args:
+            username: Tonie Cloud username (email). Falls back to USERNAME env var.
+            password: Tonie Cloud password. Falls back to PASSWORD env var.
+            session: Optional pre-configured session. If provided, username/password
+                are ignored.
 
-    def _post(self, url: str, data: dict | None = None) -> dict:
-        if not data:
-            data = {}
-        return self.__request(url, HttpMethod.POST, data=data)
+        Raises:
+            AuthenticationError: If credentials are missing or invalid.
+        """
+        if session is not None:
+            self._session = session
+        else:
+            load_dotenv()
+            username = username or os.environ.get("USERNAME")
+            password = password or os.environ.get("PASSWORD")
 
-    def _patch(self, url: str, data: dict | None = None) -> dict:
-        if not data:
-            data = {}
-        return self.__request(url, HttpMethod.PATCH, data=data)
+            if not username or not password:
+                msg = "Username and password are required"
+                raise AuthenticationError(msg)
+
+            try:
+                self._session = TonieCloudSession(username, password)
+            except requests.HTTPError as e:
+                msg = "Authentication failed"
+                raise AuthenticationError(msg, status_code=e.response.status_code, response=e.response) from e
+
+        logger.debug("TonieAPI initialized successfully")
+
+    def _request(self, method: str, path: str, **kwargs: Any) -> requests.Response:
+        """Make an authenticated request to the API.
+
+        Args:
+            method: HTTP method (GET, POST, PATCH, etc.).
+            path: API path (without base URL).
+            **kwargs: Additional arguments passed to requests.
+
+        Returns:
+            Response object.
+
+        Raises:
+            TonieAPIError: On API errors.
+        """
+        url = f"{TonieCloudSession.BASE_URL}{path}"
+        logger.debug("%s %s", method, url)
+
+        response = self._session.request(method, url, **kwargs)
+
+        if not response.ok:
+            self._handle_error_response(response)
+
+        return response
+
+    def _handle_error_response(self, response: requests.Response) -> None:
+        """Convert HTTP error response to appropriate exception.
+
+        Args:
+            response: The error response.
+
+        Raises:
+            AuthenticationError: For 401/403 responses.
+            NotFoundError: For 404 responses.
+            RateLimitError: For 429 responses.
+            ValidationError: For 400 responses.
+            ServerError: For 5xx responses.
+            TonieAPIError: For other error responses.
+        """
+        status = response.status_code
+        try:
+            detail = response.json()
+            message = detail.get("message", response.text)
+        except (ValueError, KeyError):
+            message = response.text or f"HTTP {status}"
+
+        if status in (HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN):
+            raise AuthenticationError(message, status_code=status, response=response)
+        if status == HTTPStatus.NOT_FOUND:
+            raise NotFoundError(message, status_code=status, response=response)
+        if status == HTTPStatus.TOO_MANY_REQUESTS:
+            raise RateLimitError(message, status_code=status, response=response)
+        if status == HTTPStatus.BAD_REQUEST:
+            raise ValidationError(message, status_code=status, response=response)
+        if status >= HTTPStatus.INTERNAL_SERVER_ERROR:
+            raise ServerError(message, status_code=status, response=response)
+        raise TonieAPIError(message, status_code=status, response=response)
+
+    # Core API Methods
 
     def get_me(self) -> User:
-        """Gets the information about the logged in user.
+        """Get current user information.
 
         Returns:
-            User: The user object.
+            User object with uuid and email.
         """
-        url = "me"
-        return User(**self._get(url))
+        response = self._request("GET", "/me")
+        return User.model_validate(response.json())
 
     def get_config(self) -> Config:
-        """Gets the backend configuration.
+        """Get backend configuration.
 
         Returns:
-            User: The config object.
+            Config object with limits and settings.
         """
-        url = "config"
-        return Config(**self._get(url))
+        response = self._request("GET", "/config")
+        return Config.model_validate(response.json())
 
     def get_households(self) -> list[Household]:
-        """Get all households of the logged in user.
+        """Get all households for the current user.
 
         Returns:
-            List[Household]: All Households of user.
+            List of Household objects.
         """
-        url = "households"
-        return [Household(**x) for x in self._get(url)]
+        response = self._request("GET", "/households")
+        return [Household.model_validate(h) for h in response.json()]
 
-    def get_all_creative_tonies_by_household(self, household: Household) -> list[CreativeTonie]:
-        """Get all creative tonies by a given household.
+    def get_creative_tonies(self, household_id: str) -> list[CreativeTonie]:
+        """Get all Creative Tonies in a household.
 
         Args:
-            household (Household): A household
+            household_id: The household ID.
 
         Returns:
-            Lis[CreativeTonie]: A list of all creative tonies, which belong to the given household.
+            List of CreativeTonie objects.
         """
-        url = Template("households/$household_id/creativetonies")
-        return [CreativeTonie(**ct) for ct in self._get(url=url.substitute(household_id=household.id))]
+        response = self._request("GET", f"/households/{household_id}/creativetonies")
+        return [CreativeTonie.model_validate(t) for t in response.json()]
 
-    def get_all_creative_tonies(self) -> list[CreativeTonie]:
-        """Get all creative tonies of the logged in user.
+    def get_creative_tonie(self, household_id: str, tonie_id: str) -> CreativeTonie:
+        """Get a specific Creative Tonie.
+
+        Args:
+            household_id: The household ID.
+            tonie_id: The Creative Tonie ID.
 
         Returns:
-            List[CreativeTonie]: A list of all creative tonies, which belong to the logged in user.
+            CreativeTonie object.
         """
-        url = Template("households/$household_id/creativetonies")
-        return [
-            CreativeTonie(**ct)
-            for household in self.get_households()
-            for ct in self._get(url=url.substitute(household_id=household.id))
-        ]
+        response = self._request("GET", f"/households/{household_id}/creativetonies/{tonie_id}")
+        return CreativeTonie.model_validate(response.json())
 
-    def upload_file_to_tonie(self, creative_tonie: CreativeTonie, file: Path | str, title: str) -> None:
-        """Upload file to toniecloud and append as new chapter to tonie.
+    def update_creative_tonie(
+        self,
+        household_id: str,
+        tonie_id: str,
+        *,
+        chapters: list[dict[str, str]] | None = None,
+        name: str | None = None,
+    ) -> CreativeTonie:
+        """Update a Creative Tonie.
 
         Args:
-            creative_tonie (CreativeTonie): The tonie on which the file gets uploaded to
-            file (Path | str): The path of the file
-            title (str): the title for the chapter
+            household_id: The household ID.
+            tonie_id: The Creative Tonie ID.
+            chapters: Optional list of chapter dicts with 'id', 'title', 'file' keys.
+            name: Optional new name for the Tonie.
 
         Returns:
-            boolean: True if file was successful uploaded.
+            Updated CreativeTonie object.
         """
-        file = Path(file)
-        mime_type = mimetypes.guess_type(file)
-        upload_request = FileUploadRequest(**self._post("file"))
-        log.debug("fileId: %s - fields %s", upload_request.fileId, upload_request.request.fields)
-        # upload to Amazon S3
-        try:
-            with file.open("rb") as _fs:
-                r = requests.post(
-                    upload_request.request.url,
-                    data=upload_request.request.fields,
-                    files={
-                        "file": (upload_request.request.fields["key"], _fs, mime_type[0] if mime_type else None),
-                    },
-                    timeout=180,
-                )
-            r.raise_for_status()
-        except HTTPError:
-            log.exception("HTTP error occurred")
-            raise
+        data: dict[str, Any] = {}
+        if chapters is not None:
+            data["chapters"] = chapters
+        if name is not None:
+            data["name"] = name
 
-        # add chapter to creative tonie
-        self.add_chapter_to_tonie(creative_tonie, upload_request.fileId, title)
+        response = self._request("PATCH", f"/households/{household_id}/creativetonies/{tonie_id}", json=data)
+        return CreativeTonie.model_validate(response.json())
 
-    def add_chapter_to_tonie(self, creative_tonie: CreativeTonie, file_id: str, title: str) -> None:
-        """Add a chapter to a given tonie with file_id and title.
+    def add_chapter(
+        self,
+        household_id: str,
+        tonie_id: str,
+        title: str,
+        file_id: str,
+    ) -> CreativeTonie:
+        """Add a chapter to a Creative Tonie.
 
         Args:
-            creative_tonie (CreativeTonie): The Tonie to add the chapter to
-            file_id (str): The file id of the file to add as chapter
-            title (str): The title of the chapter
-        """
-        url = f"households/{creative_tonie.householdId}/creativetonies/{creative_tonie.id}/chapters"
-        self._post(url=url, data={"title": title, "file": file_id})
+            household_id: The household ID.
+            tonie_id: The Creative Tonie ID.
+            title: Chapter title.
+            file_id: File ID from upload or content token.
 
-    def sort_chapter_of_tonie(self, creative_tonie: CreativeTonie, sort_list: list[Chapter]) -> None:
-        """Sort all chapters of the tonie to the given list.
+        Returns:
+            Updated CreativeTonie object.
+        """
+        data = {"title": title, "file": file_id}
+        response = self._request("POST", f"/households/{household_id}/creativetonies/{tonie_id}/chapters", json=data)
+        return CreativeTonie.model_validate(response.json())
+
+    def request_file_upload(self) -> FileUploadRequest:
+        """Request a presigned URL for file upload.
+
+        Returns:
+            FileUploadRequest with S3 upload details and file ID.
+        """
+        response = self._request("POST", "/file")
+        return FileUploadRequest.model_validate(response.json())
+
+    # Convenience Methods
+
+    def upload_to_s3(
+        self,
+        file_path: str | Path,
+        upload_request: FileUploadRequest | None = None,
+    ) -> str:
+        """Upload a file to S3 using presigned URL.
 
         Args:
-            creative_tonie (CreativeTonie): The Tonie to sort the chapters on.
-            sort_list (list[Chapter]): A list of all chapters in the correct order.
-        """
-        url = f"households/{creative_tonie.householdId}/creativetonies/{creative_tonie.id}"
-        self._patch(url=url, data={"chapters": [dict(chapter) for chapter in sort_list]})
+            file_path: Path to the audio file.
+            upload_request: Optional pre-fetched upload request.
+                If not provided, a new one will be requested.
 
-    def clear_all_chapter_of_tonie(self, creative_tonie: CreativeTonie) -> None:
-        """Clear all chapter of given tonie.
+        Returns:
+            The file ID for use in add_chapter.
+        """
+        if upload_request is None:
+            upload_request = self.request_file_upload()
+
+        file_path = Path(file_path)
+        logger.debug("Uploading %s to S3", file_path.name)
+
+        with file_path.open("rb") as f:
+            files = {"file": (upload_request.request.fields["key"], f)}
+            response = requests.post(
+                upload_request.request.url,
+                data=upload_request.request.fields,
+                files=files,
+                timeout=300,
+            )
+            response.raise_for_status()
+
+        logger.debug("Upload complete, file_id=%s", upload_request.file_id)
+        return upload_request.file_id
+
+    def upload_audio_file(
+        self,
+        file_path: str | Path,
+        household_id: str,
+        tonie_id: str,
+        title: str | None = None,
+    ) -> CreativeTonie:
+        """Upload an audio file and add it as a chapter to a Creative Tonie.
+
+        This is a convenience method that performs the complete upload flow:
+        1. Request upload URL
+        2. Upload to S3
+        3. Add chapter to Tonie
 
         Args:
-            creative_tonie (CreativeTonie): _The tonie to clear all chapters on.
+            file_path: Path to the audio file.
+            household_id: The household ID.
+            tonie_id: The Creative Tonie ID.
+            title: Optional chapter title. Defaults to filename without extension.
+
+        Returns:
+            Updated CreativeTonie object.
         """
-        url = f"households/{creative_tonie.householdId}/creativetonies/{creative_tonie.id}"
-        self._patch(url=url, data={"chapters": []})
+        file_path = Path(file_path)
+        if title is None:
+            title = file_path.stem
+
+        file_id = self.upload_to_s3(file_path)
+        return self.add_chapter(household_id, tonie_id, title, file_id)
+
+    def shuffle_chapters(self, household_id: str, tonie_id: str) -> CreativeTonie:
+        """Shuffle the chapters of a Creative Tonie.
+
+        Uses Fisher-Yates shuffle algorithm.
+
+        Args:
+            household_id: The household ID.
+            tonie_id: The Creative Tonie ID.
+
+        Returns:
+            Updated CreativeTonie object with shuffled chapters.
+        """
+        tonie = self.get_creative_tonie(household_id, tonie_id)
+
+        if len(tonie.chapters) < _MIN_SHUFFLE_CHAPTERS:
+            return tonie
+
+        chapters = [{"id": c.id, "title": c.title, "file": c.file} for c in tonie.chapters]
+        random.shuffle(chapters)
+
+        return self.update_creative_tonie(household_id, tonie_id, chapters=chapters)
+
+    def clear_chapters(self, household_id: str, tonie_id: str) -> CreativeTonie:
+        """Remove all chapters from a Creative Tonie.
+
+        Args:
+            household_id: The household ID.
+            tonie_id: The Creative Tonie ID.
+
+        Returns:
+            Updated CreativeTonie object with no chapters.
+        """
+        return self.update_creative_tonie(household_id, tonie_id, chapters=[])
+
+    def set_chapters(
+        self,
+        household_id: str,
+        tonie_id: str,
+        chapters: list[dict[str, str]],
+    ) -> CreativeTonie:
+        """Set the chapters of a Creative Tonie.
+
+        Args:
+            household_id: The household ID.
+            tonie_id: The Creative Tonie ID.
+            chapters: List of chapter dicts with 'id', 'title', 'file' keys.
+
+        Returns:
+            Updated CreativeTonie object.
+        """
+        return self.update_creative_tonie(household_id, tonie_id, chapters=chapters)

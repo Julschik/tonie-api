@@ -1,82 +1,181 @@
-# tonie-api
+# Tonie API
 
-<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+Python client for the Tonie Cloud API (tonies.de).
 
-[![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=flat-square)](#contributors-)
-
-<!-- ALL-CONTRIBUTORS-BADGE:END -->
-
-<p align="center">
-  <a href="https://github.com/Wilhelmsson177/tonie-api/actions/workflows/ci.yml?query=branch%3Amain">
-    <img src="https://img.shields.io/github/actions/workflow/status/Wilhelmsson177/tonie-api/ci.yml?branch=main&label=CI&logo=github&style=flat-square" alt="CI Status" >
-  </a>
-  <a href="https://tonie-api.readthedocs.io">
-    <img src="https://img.shields.io/readthedocs/tonie-api.svg?logo=read-the-docs&logoColor=fff&style=flat-square" alt="Documentation Status">
-  </a>
-  <a href="https://codecov.io/gh/Wilhelmsson177/tonie-api" > 
-  <img src="https://codecov.io/gh/Wilhelmsson177/tonie-api/graph/badge.svg?token=5RQI9FTXXO"/> 
-  </a>
-</p>
-<p align="center">
-  <a href="https://python-poetry.org/">
-    <img src="https://img.shields.io/badge/packaging-poetry-299bd7?style=flat-square&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAASCAYAAABrXO8xAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAJJSURBVHgBfZLPa1NBEMe/s7tNXoxW1KJQKaUHkXhQvHgW6UHQQ09CBS/6V3hKc/AP8CqCrUcpmop3Cx48eDB4yEECjVQrlZb80CRN8t6OM/teagVxYZi38+Yz853dJbzoMV3MM8cJUcLMSUKIE8AzQ2PieZzFxEJOHMOgMQQ+dUgSAckNXhapU/NMhDSWLs1B24A8sO1xrN4NECkcAC9ASkiIJc6k5TRiUDPhnyMMdhKc+Zx19l6SgyeW76BEONY9exVQMzKExGKwwPsCzza7KGSSWRWEQhyEaDXp6ZHEr416ygbiKYOd7TEWvvcQIeusHYMJGhTwF9y7sGnSwaWyFAiyoxzqW0PM/RjghPxF2pWReAowTEXnDh0xgcLs8l2YQmOrj3N7ByiqEoH0cARs4u78WgAVkoEDIDoOi3AkcLOHU60RIg5wC4ZuTC7FaHKQm8Hq1fQuSOBvX/sodmNJSB5geaF5CPIkUeecdMxieoRO5jz9bheL6/tXjrwCyX/UYBUcjCaWHljx1xiX6z9xEjkYAzbGVnB8pvLmyXm9ep+W8CmsSHQQY77Zx1zboxAV0w7ybMhQmfqdmmw3nEp1I0Z+FGO6M8LZdoyZnuzzBdjISicKRnpxzI9fPb+0oYXsNdyi+d3h9bm9MWYHFtPeIZfLwzmFDKy1ai3p+PDls1Llz4yyFpferxjnyjJDSEy9CaCx5m2cJPerq6Xm34eTrZt3PqxYO1XOwDYZrFlH1fWnpU38Y9HRze3lj0vOujZcXKuuXm3jP+s3KbZVra7y2EAAAAAASUVORK5CYII=" alt="Poetry">
-  </a>
-  <a href="https://github.com/ambv/black">
-    <img src="https://img.shields.io/badge/code%20style-black-000000.svg?style=flat-square" alt="black">
-  </a>
-  <a href="https://github.com/pre-commit/pre-commit">
-    <img src="https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white&style=flat-square" alt="pre-commit">
-  </a>
-</p>
-<p align="center">
-  <a href="https://pypi.org/project/tonie-api/">
-    <img src="https://img.shields.io/pypi/v/tonie-api.svg?logo=python&logoColor=fff&style=flat-square" alt="PyPI Version">
-  </a>
-  <img src="https://img.shields.io/pypi/pyversions/tonie-api.svg?style=flat-square&logo=python&amp;logoColor=fff" alt="Supported Python versions">
-  <img src="https://img.shields.io/pypi/l/tonie-api.svg?style=flat-square" alt="License">
-</p>
-
-Python library to access the REST API of the toniecloud. NOT associated with Boxine (tonies.de) in any way.
+> **Note:** This is an unofficial API client, not associated with Boxine.
 
 ## Installation
 
-Install this via pip (or your favourite package manager):
+```bash
+pip install git+https://github.com/Julschik/tonie-api.git
+```
 
-`pip install tonie-api`
+## Konfiguration
 
-## Contributors ✨
+1. Kopiere `.env.example` nach `.env`
+2. Trage deine Tonie-Zugangsdaten ein:
+   ```
+   USERNAME=deine@email.de
+   PASSWORD=dein_passwort
+   ```
 
-Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
+## Quick Start
 
-<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
-<!-- prettier-ignore-start -->
-<!-- markdownlint-disable -->
-<table>
-  <tbody>
-    <tr>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/moritzj29"><img src="https://avatars.githubusercontent.com/u/18733473?v=4?s=100" width="100px;" alt="moritzj29"/><br /><sub><b>moritzj29</b></sub></a><br /><a href="https://github.com/Wilhelmsson177/tonie-api/commits?author=moritzj29" title="Code">💻</a> <a href="#ideas-moritzj29" title="Ideas, Planning, & Feedback">🤔</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Wilhelmsson177"><img src="https://avatars.githubusercontent.com/u/16141053?v=4?s=100" width="100px;" alt="Wilhelmsson177"/><br /><sub><b>Wilhelmsson177</b></sub></a><br /><a href="https://github.com/Wilhelmsson177/tonie-api/commits?author=Wilhelmsson177" title="Tests">⚠️</a> <a href="#projectManagement-Wilhelmsson177" title="Project Management">📆</a> <a href="#maintenance-Wilhelmsson177" title="Maintenance">🚧</a> <a href="https://github.com/Wilhelmsson177/tonie-api/commits?author=Wilhelmsson177" title="Code">💻</a></td>
-    </tr>
-  </tbody>
-</table>
+```python
+from tonie_api import TonieAPI
 
-<!-- markdownlint-restore -->
-<!-- prettier-ignore-end -->
+# Lädt automatisch Credentials aus .env
+api = TonieAPI()
 
-<!-- ALL-CONTRIBUTORS-LIST:END -->
+# Oder explizit:
+# api = TonieAPI(username="user@example.com", password="secret")
 
-<!-- prettier-ignore-start -->
-<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
-<!-- markdownlint-disable -->
-<!-- markdownlint-enable -->
-<!-- ALL-CONTRIBUTORS-LIST:END -->
-<!-- prettier-ignore-end -->
+# Get user info
+user = api.get_me()
+print(f"Logged in as: {user.email}")
 
-This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!
+# Get households
+households = api.get_households()
 
-## Credits
+# Get creative tonies for a household
+tonies = api.get_creative_tonies(households[0].id)
 
-This package was created with
-[Copier](https://copier.readthedocs.io/) and the
-[browniebroke/pypackage-template](https://github.com/browniebroke/pypackage-template)
-project template.
+for tonie in tonies:
+    print(f"{tonie.name}: {tonie.chapters_present} chapters")
+
+# Upload audio file (handles S3 upload automatically)
+api.upload_audio_file(
+    file_path="story.mp3",
+    household_id=households[0].id,
+    tonie_id=tonies[0].id,
+    title="My Story"  # optional, defaults to filename
+)
+
+# Shuffle chapters
+api.shuffle_chapters(households[0].id, tonies[0].id)
+
+# Clear all chapters
+api.clear_chapters(households[0].id, tonies[0].id)
+```
+
+## Kommandozeilen-Tool (CLI)
+
+Du kannst die Tonie API auch ohne Python-Kenntnisse direkt im Terminal nutzen.
+
+### Terminal öffnen
+
+- **macOS**: Drücke `Cmd + Leertaste`, tippe "Terminal" und drücke Enter
+- **Windows**: Drücke die Windows-Taste, tippe "cmd" oder "PowerShell" und drücke Enter
+
+### Voraussetzung: Python installieren
+
+Falls du die Fehlermeldung `command not found: pip` erhältst, musst du zuerst Python installieren.
+
+**macOS:**
+1. Öffne das Terminal
+2. Gib ein: `brew install python`
+3. Falls Homebrew nicht installiert ist, besuche [brew.sh](https://brew.sh) und folge der Anleitung
+
+**Windows:**
+1. Lade Python von [python.org/downloads](https://www.python.org/downloads/) herunter
+2. Führe den Installer aus
+3. **Wichtig:** Setze den Haken bei "Add Python to PATH"
+4. Starte das Terminal neu
+
+### Installation
+
+Gib im Terminal folgenden Befehl ein:
+
+```bash
+pip install git+https://github.com/Julschik/tonie-api.git
+```
+
+Falls `pip` nicht funktioniert, versuche `pip3`:
+
+```bash
+pip3 install git+https://github.com/Julschik/tonie-api.git
+```
+
+### Zugangsdaten einrichten
+
+Erstelle eine Datei namens `.env` im Ordner, von dem aus du die Befehle ausführst:
+
+```
+USERNAME=deine@email.de
+PASSWORD=dein_passwort
+```
+
+Ersetze die Werte mit deinen echten Tonie-Zugangsdaten.
+
+### Verfügbare Befehle
+
+| Befehl | Beschreibung |
+|--------|--------------|
+| `tonie me` | Zeigt deine Benutzerinfo |
+| `tonie households` | Listet alle deine Haushalte |
+| `tonie tonies` | Zeigt alle Creative Tonies |
+| `tonie upload DATEI TONIE-ID` | Lädt eine Audio-Datei auf einen Tonie |
+| `tonie shuffle TONIE-ID` | Mischt die Kapitelreihenfolge zufällig |
+| `tonie clear TONIE-ID --yes` | Löscht alle Kapitel vom Tonie |
+
+### Praxisbeispiel: Hörbuch hochladen
+
+1. **Tonie-ID herausfinden**
+   ```bash
+   tonie tonies
+   ```
+   Notiere dir die ID deines Creative Tonies (z.B. `CF12345678901234`).
+
+2. **Audio-Datei hochladen**
+   ```bash
+   tonie upload /pfad/zu/hoerbuch.mp3 CF12345678901234
+   ```
+
+3. **Kapitel mischen** (optional)
+   ```bash
+   tonie shuffle CF12345678901234
+   ```
+
+Fertig! Stelle den Tonie auf die Box, um die Änderungen zu synchronisieren.
+
+### Hilfe anzeigen
+
+Für weitere Optionen zu jedem Befehl:
+
+```bash
+tonie --help
+tonie upload --help
+```
+
+## Error Handling
+
+```python
+from tonie_api import TonieAPI, AuthenticationError, NotFoundError
+
+try:
+    api = TonieAPI()
+    tonie = api.get_creative_tonie(household_id, tonie_id)
+except AuthenticationError:
+    print("Invalid credentials")
+except NotFoundError:
+    print("Tonie not found")
+```
+
+For detailed API documentation (endpoints, response models, file upload flow), see [API.md](API.md).
+
+## Development
+
+```bash
+# Install dependencies
+poetry install
+
+# Run tests
+poetry run pytest
+
+# Run linting
+pre-commit run -a
+```
+
+## License
+
+MIT

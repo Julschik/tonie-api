@@ -1,65 +1,85 @@
-"""Dataclass models of all relevant TonieCloudAPI objects."""
-from datetime import datetime
+"""Pydantic models for Tonie Cloud API responses."""
 
-from pydantic import BaseModel
+from datetime import datetime
+from typing import Optional
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class User(BaseModel):
+    """Current user information."""
+
     uuid: str
     email: str
 
 
 class Config(BaseModel):
+    """Backend configuration."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
     locales: list[str]
-    unicodeLocales: list[str]
-    maxChapters: int
-    maxSeconds: int
-    maxBytes: int
+    unicode_locales: list[str] = Field(alias="unicodeLocales")
+    max_chapters: int = Field(alias="maxChapters")
+    max_seconds: int = Field(alias="maxSeconds")
+    max_bytes: int = Field(alias="maxBytes")
     accepts: list[str]
-    stageWarning: bool
-    paypalClientId: str
-    ssoEnabled: bool
+    stage_warning: bool = Field(alias="stageWarning")
+    paypal_client_id: str = Field(alias="paypalClientId")
+    sso_enabled: bool = Field(alias="ssoEnabled")
 
 
 class Household(BaseModel):
+    """Household information."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
     id: str
     name: str
-    ownerName: str
+    owner_name: str = Field(alias="ownerName")
     access: str
-    canLeave: bool
+    can_leave: bool = Field(alias="canLeave")
 
 
 class Chapter(BaseModel):
-    id: str  # 	ID of this chapter (for existing chapters)
-    title: str  # Human-readable name for this chapter
-    # File identifier. For new chapters: a UUID (see POST /file on how to generate it).
-    # For existing chapters: an opaque blob(only used in case of concurrent editing by another device).
-    # Starts with "ContentToken:" if this chapter is from a Content-Token,
-    # followed by the content token followed by ":", followed by the 0-indexed chapter of the Content-Token.
+    """Chapter on a Creative Tonie."""
+
+    id: str
+    title: str
     file: str
-    seconds: float  # Length of this chapter in seconds
-    transcoding: bool  # 	Is this chapter currently transcoding?
+    seconds: float
+    transcoding: bool
 
 
 class CreativeTonie(BaseModel):
+    """Creative Tonie with chapters."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
     id: str
-    householdId: str
+    household_id: str = Field(alias="householdId")
     name: str
-    imageUrl: str
-    secondsRemaining: float
-    secondsPresent: float
-    chaptersRemaining: int
-    chaptersPresent: int
+    image_url: str = Field(alias="imageUrl")
+    seconds_remaining: float = Field(alias="secondsRemaining")
+    seconds_present: float = Field(alias="secondsPresent")
+    chapters_remaining: int = Field(alias="chaptersRemaining")
+    chapters_present: int = Field(alias="chaptersPresent")
     transcoding: bool
-    lastUpdate: None | datetime
+    last_update: Optional[datetime] = Field(alias="lastUpdate", default=None)
     chapters: list[Chapter]
 
 
-class Request(BaseModel):
+class UploadRequestDetails(BaseModel):
+    """S3 presigned upload details."""
+
     url: str
-    fields: dict
+    fields: dict[str, str]
 
 
 class FileUploadRequest(BaseModel):
-    request: Request
-    fileId: str
+    """Response from file upload request."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    request: UploadRequestDetails
+    file_id: str = Field(alias="fileId")

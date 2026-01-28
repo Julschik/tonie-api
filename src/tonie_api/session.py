@@ -1,48 +1,48 @@
-"""The module of the Toniecloud session."""
-import logging
+"""Session handling for the Tonie Cloud API with OAuth2 authentication."""
 
 import requests
-from requests.exceptions import RequestException, Timeout
 
-log = logging.getLogger(__name__)
-log.addHandler(logging.NullHandler())
 
 class TonieCloudSession(requests.Session):
-    """A regular restss session to the TonieCloud REST API."""
+    """HTTP Session with OAuth2 token handling for the Tonie Cloud API."""
 
-    URI: str = "https://api.tonie.cloud/v2"
-    OPENID_CONNECT: str = "https://login.tonies.com/auth/realms/tonies/protocol/openid-connect/token"
+    TOKEN_URL = "https://login.tonies.com/auth/realms/tonies/protocol/openid-connect/token"  # noqa: S105
+    CLIENT_ID = "my-tonies"
+    BASE_URL = "https://api.tonie.cloud/v2"
 
-    def __init__(self):
-        """Initialize the session."""
-        super().__init__()
-        self.token: None | str = None
-
-    def acquire_token(self, username: str, password: str, timeout: int = 30) -> None:
-        """Acquire the token from the ToniCloud SSO login using username and password.
+    def __init__(self, username: str, password: str):
+        """Initialize session and acquire OAuth2 token.
 
         Args:
-            username (str): The username
-            password (str): The password_
-            timeout (int): The request timeout. Try to increase this value if you receive a timeout error
-        """
-        self.token = self._acquire_token(username, password,timeout)
+            username: Tonie Cloud username (email).
+            password: Tonie Cloud password.
 
-    def _acquire_token(self, username: str, password: str, timeout: int) -> str | None:
-        data = {
-            "grant_type": "password",
-            "client_id": "my-tonies",
-            "scope": "openid",
-            "username": username,
-            "password": password,
-        }
-        try:
-            response = requests.post(self.OPENID_CONNECT, data=data, timeout=timeout)
-            response.raise_for_status()
-            return response.json().get("access_token")
-        except Timeout:
-            log.exception("Request to acquire token timed out.")
-        except RequestException as e:
-            msg = f"An error occurred while acquiring the token: {e}"
-            log.exception(msg)
-        return None
+        Raises:
+            requests.HTTPError: If authentication fails.
+        """
+        super().__init__()
+        self._username = username
+        self._password = password
+        self.acquire_token()
+
+    def acquire_token(self) -> None:
+        """Acquire OAuth2 access token via password grant.
+
+        Raises:
+            requests.HTTPError: If token request fails.
+        """
+        response = requests.post(
+            self.TOKEN_URL,
+            data={
+                "grant_type": "password",
+                "client_id": self.CLIENT_ID,
+                "scope": "openid",
+                "username": self._username,
+                "password": self._password,
+            },
+            timeout=30,
+        )
+        response.raise_for_status()
+        token_data = response.json()
+        access_token = token_data["access_token"]
+        self.headers.update({"Authorization": f"Bearer {access_token}"})
