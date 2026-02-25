@@ -221,26 +221,9 @@ description = "Composable command line interface toolkit"
 optional = false
 python-versions = ">=3.7"
 groups = ["main"]
-markers = "python_version == \"3.9\""
 files = [
     {file = "click-8.1.8-py3-none-any.whl", hash = "sha256:63c132bbbed01578a06712a2d1f497bb62d9c1c0d329b7903a866228027263b2"},
     {file = "click-8.1.8.tar.gz", hash = "sha256:ed53c9d8990d83c2a27deae68e4ee337473f6330c040a31d4225c9574d16096a"},
-]
-
-[package.dependencies]
-colorama = {version = "*", markers = "platform_system == \"Windows\""}
-
-[[package]]
-name = "click"
-version = "8.3.1"
-description = "Composable command line interface toolkit"
-optional = false
-python-versions = ">=3.10"
-groups = ["main"]
-markers = "python_version >= \"3.10\""
-files = [
-    {file = "click-8.3.1-py3-none-any.whl", hash = "sha256:981153a64e25f12d547d3426c367a4857371575ee7ad18df2a6183ab0545b2a6"},
-    {file = "click-8.3.1.tar.gz", hash = "sha256:12ff4785d337a1bb490bb7e9c2b1ee5da3112e94a8622f26a6c77f5d2fc6842a"},
 ]
 
 [package.dependencies]
@@ -1408,14 +1391,14 @@ rsa = ["oauthlib[signedtoken] (>=3.0.0)"]
 
 [[package]]
 name = "responses"
-version = "0.25.8"
+version = "0.26.0"
 description = "A utility library for mocking out the `requests` Python library."
 optional = false
 python-versions = ">=3.8"
 groups = ["dev"]
 files = [
-    {file = "responses-0.25.8-py3-none-any.whl", hash = "sha256:0c710af92def29c8352ceadff0c3fe340ace27cf5af1bbe46fb71275bcd2831c"},
-    {file = "responses-0.25.8.tar.gz", hash = "sha256:9374d047a575c8f781b94454db5cab590b6029505f488d12899ddb10a4af1cf4"},
+    {file = "responses-0.26.0-py3-none-any.whl", hash = "sha256:03ec4409088cd5c66b71ecbbbd27fe2c58ddfad801c66203457b3e6a04868c37"},
+    {file = "responses-0.26.0.tar.gz", hash = "sha256:c7f6923e6343ef3682816ba421c006626777893cb0d5e1434f674b649bac9eb4"},
 ]
 
 [package.dependencies]
@@ -1829,4 +1812,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.9"
-content-hash = "49eea0a9790ca0ba5e100b57592c2d1a4faf1eed4627493f7f383e60e4ea1b7b"
+content-hash = "5c149a2fcc2a8370d0c423403b5dea2f0a2581a8e877d62a0988cf7ef295e485"

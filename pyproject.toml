@@ -32,7 +32,7 @@ tonie = "tonie_api.cli.main:cli"
 pytest = ">=7,<9"
 pytest-cov = "^4.1"
 ruff = "^0.8.3"
-responses = ">=0.23.3,<0.26.0"
+responses = ">=0.23.3,<0.27.0"
 pre-commit = "^4.0.1"
 
 [tool.poetry.group.docs]
